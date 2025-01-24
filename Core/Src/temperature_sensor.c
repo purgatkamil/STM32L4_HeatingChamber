@@ -134,7 +134,7 @@ static void temperature_task(void *argument)
     while (1)
     {
         update_temperature();
-        osDelay(1000);
+        osDelay(100);
     }
 }
 

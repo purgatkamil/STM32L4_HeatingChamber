@@ -131,7 +131,7 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of TemperatureTask */
-  //TemperatureTaskHandle = osThreadNew(temperature_sensor_task, NULL, &TemperatureTask_attributes);
+  TemperatureTaskHandle = osThreadNew(temperature_sensor_task, NULL, &TemperatureTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
