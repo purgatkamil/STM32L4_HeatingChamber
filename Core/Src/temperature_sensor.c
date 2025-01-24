@@ -32,11 +32,9 @@ typedef struct
 static ts_handler_t ts_handler;
 
 static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value);
-
 static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value);
-
 static HAL_StatusTypeDef update_temperature(void);
-
+static void handle_error(void);
 static void temperature_task(void *argument);
 
 bool temperature_sensor_init(void)
@@ -71,16 +69,20 @@ bool temperature_sensor_init(void)
 
 float temperature_sensor_get_temperature(void)
 {
-    float temperature;
+    float temperature = NAN;
 
     if (osMutexAcquire(ts_handler.temperature_mutex, osWaitForever) == osOK)
     {
         temperature = ts_handler.temperature;
-        osMutexRelease(ts_handler.temperature_mutex);
+
+        if(osOK != osMutexRelease(ts_handler.temperature_mutex))
+        {
+        	handle_error();
+        }
     }
     else
     {
-        temperature = NAN;
+    	handle_error();
     }
 
     return temperature;
@@ -121,7 +123,15 @@ static HAL_StatusTypeDef update_temperature(void)
     if (osMutexAcquire(ts_handler.temperature_mutex, osWaitForever) == osOK)
     {
         ts_handler.temperature = calculated_temp;
-        osMutexRelease(ts_handler.temperature_mutex);
+
+        if(osOK != osMutexRelease(ts_handler.temperature_mutex))
+        {
+        	handle_error();
+        }
+    }
+    else
+    {
+    	handle_error();
     }
 
     return HAL_OK;
@@ -161,3 +171,9 @@ static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value)
     *value = (data[0] << 8) | data[1];
     return HAL_OK;
 }
+
+static void handle_error(void)
+{
+
+}
+
