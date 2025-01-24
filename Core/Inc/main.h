@@ -57,6 +57,9 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define TEMPERATURE_SENSOR_INT_Pin GPIO_PIN_3
+#define TEMPERATURE_SENSOR_INT_GPIO_Port GPIOC
+#define TEMPERATURE_SENSOR_INT_EXTI_IRQn EXTI3_IRQn
 
 /* USER CODE BEGIN Private defines */
 

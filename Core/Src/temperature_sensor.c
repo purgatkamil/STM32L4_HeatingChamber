@@ -7,6 +7,7 @@
 #include <math.h>
 #include <stdint.h>
 #include "cmsis_os.h"
+#include "main.h"
 
 #define I2C_HANDLE hi2c1
 extern I2C_HandleTypeDef I2C_HANDLE;
@@ -22,6 +23,10 @@ extern I2C_HandleTypeDef I2C_HANDLE;
 #define TMP117_MODE_SHUTDOWN     0x01
 #define TMP117_MODE_ONE_SHOT     0x03
 
+#define ALERT_MODE_BIT_POSITION     4
+#define MOD_BITS_POSITION           10
+
+
 typedef struct
 {
     osThreadId_t task_handle;
@@ -36,6 +41,14 @@ static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value);
 static HAL_StatusTypeDef update_temperature(void);
 static void handle_error(void);
 static void temperature_task(void *argument);
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == TEMPERATURE_SENSOR_INT_Pin)
+    {
+
+    }
+}
 
 bool temperature_sensor_init(void)
 {
@@ -93,6 +106,22 @@ HAL_StatusTypeDef temperature_sensor_set_alarm(float high_temperature, float low
     uint16_t high_temperature_value = (uint16_t)(high_temperature / 0.0078125f);
     uint16_t low_temperature_value = (uint16_t)(low_temperature / 0.0078125f);
 
+	uint16_t config;
+
+    if (read_register(TMP117_CONFIGURATION_REGISTER, &config) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Ustaw tryb Therm Mode (T/nA bit = 1) i tryb ciągłej konwersji (MOD[1:0] = 00)
+    config |= (1 << ALERT_MODE_BIT_POSITION);  // Ustawienie bitu T/nA
+    config &= ~(3 << MOD_BITS_POSITION);       // Wyczyszczenie bitów MOD[1:0]
+
+    if (send_command(TMP117_CONFIGURATION_REGISTER, config) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
     if (send_command(TMP117_HIGH_TEMPERATURE_REGISTER, high_temperature_value) != HAL_OK)
     {
         return HAL_ERROR;
@@ -140,6 +169,8 @@ static HAL_StatusTypeDef update_temperature(void)
 static void temperature_task(void *argument)
 {
     (void)argument;
+
+    temperature_sensor_set_alarm(28, 10);
 
     while (1)
     {
