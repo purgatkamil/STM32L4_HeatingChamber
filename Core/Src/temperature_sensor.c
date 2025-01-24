@@ -36,17 +36,53 @@ static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value);
 static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value);
 
 static HAL_StatusTypeDef update_temperature(void);
+
+static void temperature_task(void *argument);
+
 bool temperature_sensor_init(void)
 {
+    bool init_ok = false;
+    bool task_ok = false;
+    bool mutex_ok = false;
+
     ts_handler.temperature = NAN;
+
+    ts_handler.temperature_mutex = osMutexNew(NULL);
+    if (ts_handler.temperature_mutex != NULL)
+    {
+        mutex_ok = true;
+    }
 
     uint16_t config = (TMP117_MODE_CONTINUOUS << 10);
     init_ok = (send_command(TMP117_CONFIGURATION_REGISTER, config) == HAL_OK);
 
+    const osThreadAttr_t task_attributes =
+    {
+        .name = "TemperatureTask",
+        .priority = osPriorityNormal,
+        .stack_size = 128 * 4
+    };
+
+    ts_handler.task_handle = osThreadNew(temperature_task, NULL, &task_attributes);
+    task_ok = (ts_handler.task_handle != NULL);
+
+    return init_ok && task_ok && mutex_ok;
+}
+
 float temperature_sensor_get_temperature(void)
 {
     float temperature;
+
+    if (osMutexAcquire(ts_handler.temperature_mutex, osWaitForever) == osOK)
+    {
         temperature = ts_handler.temperature;
+        osMutexRelease(ts_handler.temperature_mutex);
+    }
+    else
+    {
+        temperature = NAN;
+    }
+
     return temperature;
 }
 
@@ -67,6 +103,7 @@ HAL_StatusTypeDef temperature_sensor_set_alarm(float high_temperature, float low
 
     return HAL_OK;
 }
+
 static HAL_StatusTypeDef update_temperature(void)
 {
     HAL_StatusTypeDef status;
@@ -81,9 +118,24 @@ static HAL_StatusTypeDef update_temperature(void)
 
     calculated_temp = (float)((int16_t)raw_temp) * 0.0078125f;
 
+    if (osMutexAcquire(ts_handler.temperature_mutex, osWaitForever) == osOK)
+    {
         ts_handler.temperature = calculated_temp;
+        osMutexRelease(ts_handler.temperature_mutex);
+    }
 
     return HAL_OK;
+}
+
+static void temperature_task(void *argument)
+{
+    (void)argument;
+
+    while (1)
+    {
+        update_temperature();
+        osDelay(1000);
+    }
 }
 
 static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value)
