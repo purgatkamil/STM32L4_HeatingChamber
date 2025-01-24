@@ -21,3 +21,91 @@ extern I2C_HandleTypeDef I2C_HANDLE;
 #define TMP117_MODE_CONTINUOUS   0x00
 #define TMP117_MODE_SHUTDOWN     0x01
 #define TMP117_MODE_ONE_SHOT     0x03
+
+typedef struct
+{
+    osThreadId_t task_handle;
+    float temperature;
+    osMutexId_t temperature_mutex;
+} ts_handler_t;
+
+static ts_handler_t ts_handler;
+
+static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value);
+
+static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value);
+
+static HAL_StatusTypeDef update_temperature(void);
+bool temperature_sensor_init(void)
+{
+    ts_handler.temperature = NAN;
+
+    uint16_t config = (TMP117_MODE_CONTINUOUS << 10);
+    init_ok = (send_command(TMP117_CONFIGURATION_REGISTER, config) == HAL_OK);
+
+float temperature_sensor_get_temperature(void)
+{
+    float temperature;
+        temperature = ts_handler.temperature;
+    return temperature;
+}
+
+HAL_StatusTypeDef temperature_sensor_set_alarm(float high_temperature, float low_temperature)
+{
+    uint16_t high_temperature_value = (uint16_t)(high_temperature / 0.0078125f);
+    uint16_t low_temperature_value = (uint16_t)(low_temperature / 0.0078125f);
+
+    if (send_command(TMP117_HIGH_TEMPERATURE_REGISTER, high_temperature_value) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    if (send_command(TMP117_LOW_TEMPERATURE_REGISTER, low_temperature_value) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    return HAL_OK;
+}
+static HAL_StatusTypeDef update_temperature(void)
+{
+    HAL_StatusTypeDef status;
+    uint16_t raw_temp;
+    float calculated_temp;
+
+    status = read_register(TMP117_TEMPERATURE_RESULT_REGISTER, &raw_temp);
+    if (status != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    calculated_temp = (float)((int16_t)raw_temp) * 0.0078125f;
+
+        ts_handler.temperature = calculated_temp;
+
+    return HAL_OK;
+}
+
+static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value)
+{
+    uint8_t data[2];
+    data[0] = (value >> 8) & 0xFF;
+    data[1] = value & 0xFF;
+
+    HAL_StatusTypeDef status = HAL_I2C_Mem_Write(&I2C_HANDLE, TMP117_I2C_ADDRESS, reg, I2C_MEMADD_SIZE_8BIT, data, 2, HAL_MAX_DELAY);
+    return status;
+}
+
+static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value)
+{
+    uint8_t data[2];
+
+    HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&I2C_HANDLE, TMP117_I2C_ADDRESS, reg, I2C_MEMADD_SIZE_8BIT, data, 2, HAL_MAX_DELAY);
+    if (status != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    *value = (data[0] << 8) | data[1];
+    return HAL_OK;
+}
