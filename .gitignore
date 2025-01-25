@@ -1,6 +1,6 @@
 # https://github.com/github/gitignore/blob/master/C.gitignore
 
-/Debug
+Debug/
 
 # Prerequisites
 *.d
