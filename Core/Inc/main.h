@@ -60,6 +60,16 @@ void Error_Handler(void);
 #define TEMPERATURE_SENSOR_INT_Pin GPIO_PIN_3
 #define TEMPERATURE_SENSOR_INT_GPIO_Port GPIOC
 #define TEMPERATURE_SENSOR_INT_EXTI_IRQn EXTI3_IRQn
+#define LCD_SCK_Pin GPIO_PIN_5
+#define LCD_SCK_GPIO_Port GPIOA
+#define LCD_MOSI_Pin GPIO_PIN_7
+#define LCD_MOSI_GPIO_Port GPIOA
+#define LCD_CS_Pin GPIO_PIN_10
+#define LCD_CS_GPIO_Port GPIOA
+#define LCD_DC_Pin GPIO_PIN_3
+#define LCD_DC_GPIO_Port GPIOB
+#define LCD_RST_Pin GPIO_PIN_5
+#define LCD_RST_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
