@@ -30,6 +30,7 @@
 #include "temperature_sensor.h"
 #include "lcd.h"
 #include "font.h"
+#include "heater.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -165,14 +166,14 @@ void StartDefaultTask(void *argument)
 	  lcd_copy();
 	  if(temperature_sensor_is_alarm_triggered())
 	  {
-		  HAL_GPIO_WritePin(HEATER_ON_GPIO_Port, HEATER_ON_Pin, GPIO_PIN_RESET);
+		  heater_turn_off();
 	  }
 
 	  if(40 > temperature_sensor_get_temperature())
 	  {
 		  temperature_sensor_clear_alarm();
 		  temperature_sensor_set_alarm(30, 10);
-		  HAL_GPIO_WritePin(HEATER_ON_GPIO_Port, HEATER_ON_Pin, GPIO_PIN_SET);
+		  heater_turn_on();
 	  }
 
 
