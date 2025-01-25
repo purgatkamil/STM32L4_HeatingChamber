@@ -81,8 +81,8 @@ bool temperature_sensor_init(void)
     {
     	ts_handler.alarm_handler.alarm_mutex = osMutexNew(NULL);
     	if(ts_handler.alarm_handler.alarm_mutex != NULL)
-    {
-        mutex_ok = true;
+    	{
+    		 mutex_ok = true;
     	}
     }
 
@@ -128,7 +128,7 @@ HAL_StatusTypeDef temperature_sensor_set_alarm(float high_temperature, float low
     uint16_t high_temperature_value = (uint16_t)(high_temperature / 0.0078125f);
     uint16_t low_temperature_value = (uint16_t)(low_temperature / 0.0078125f);
 
-	uint16_t config;
+    uint16_t config;
 
     if (read_register(TMP117_CONFIGURATION_REGISTER, &config) != HAL_OK)
     {
@@ -214,20 +214,20 @@ static HAL_StatusTypeDef update_temperature(void)
 
     if (status == HAL_OK)
     {
-    calculated_temp = (float)((int16_t)raw_temp) * 0.0078125f;
+        calculated_temp = (float)((int16_t)raw_temp) * 0.0078125f;
 
         if (osMutexAcquire(ts_handler.temperature_handler.temperature_mutex, osWaitForever) == osOK)
-    {
+        {
             ts_handler.temperature_handler.temperature = calculated_temp;
 
             if(osOK != osMutexRelease(ts_handler.temperature_handler.temperature_mutex))
+            {
+            	handle_error();
+            }
+        }
+        else
         {
         	handle_error();
-        }
-    }
-    else
-    {
-    	handle_error();
         }
     }
 
@@ -267,7 +267,7 @@ static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value)
 
     if (status == HAL_OK)
     {
-    *value = (data[0] << 8) | data[1];
+    	*value = (data[0] << 8) | data[1];
     }
 
     return status;
@@ -287,7 +287,7 @@ static void temeprature_sensor_trigger_alarm(void)
     else
     {
     	handle_error();
-}
+    }
 }
 
 static void handle_error(void)

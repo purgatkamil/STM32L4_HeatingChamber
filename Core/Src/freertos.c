@@ -159,12 +159,24 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
 	  temp = temperature_sensor_get_temperature();
-	  sprintf(min_pulse_tab, "temperature: %f", temp);
+	  sprintf(min_pulse_tab, "%0.2f C", temp);
 	  fill_with(BLACK);
-	  LCD_DisplayString(5, 5, min_pulse_tab, WHITE, LCD_FONT8);
+	  LCD_DisplayString(5, 5, min_pulse_tab, WHITE, LCD_FONT24);
 	  lcd_copy();
+	  if(temperature_sensor_is_alarm_triggered())
+	  {
+		  HAL_GPIO_WritePin(HEATER_ON_GPIO_Port, HEATER_ON_Pin, GPIO_PIN_RESET);
+	  }
 
-      osDelay(500);
+	  if(40 > temperature_sensor_get_temperature())
+	  {
+		  temperature_sensor_clear_alarm();
+		  temperature_sensor_set_alarm(30, 10);
+		  HAL_GPIO_WritePin(HEATER_ON_GPIO_Port, HEATER_ON_Pin, GPIO_PIN_SET);
+	  }
+
+
+      osDelay(100);
   }
   /* USER CODE END StartDefaultTask */
 }
