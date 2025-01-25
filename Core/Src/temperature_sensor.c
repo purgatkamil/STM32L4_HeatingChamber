@@ -292,6 +292,7 @@ static void temeprature_sensor_trigger_alarm(void)
 
 static void handle_error(void)
 {
-
+	HAL_GPIO_WritePin(HEATER_ON_GPIO_Port, HEATER_ON_Pin, GPIO_PIN_RESET);
+	__asm volatile("BKPT #0");
 }
 
