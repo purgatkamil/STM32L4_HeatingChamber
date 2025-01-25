@@ -26,12 +26,23 @@ extern I2C_HandleTypeDef I2C_HANDLE;
 #define ALERT_MODE_BIT_POSITION     4
 #define MOD_BITS_POSITION           10
 
+typedef struct
+{
+    float temperature;
+    osMutexId_t temperature_mutex;
+} temperature_handler_t;
 
 typedef struct
 {
+	bool alarm;
+	osMutexId_t alarm_mutex;
+} alarm_handler_t;
+
+typedef struct
+{
+    temperature_handler_t temperature_handler;
+    alarm_handler_t alarm_handler;
     osThreadId_t task_handle;
-    float temperature;
-    osMutexId_t temperature_mutex;
 } ts_handler_t;
 
 static ts_handler_t ts_handler;
@@ -41,12 +52,17 @@ static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value);
 static HAL_StatusTypeDef update_temperature(void);
 static void handle_error(void);
 static void temperature_task(void *argument);
+static void temeprature_sensor_trigger_alarm(void);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == TEMPERATURE_SENSOR_INT_Pin)
     {
-
+    	if(ts_handler.alarm_handler.alarm == false)
+    	{
+    		temeprature_sensor_trigger_alarm();
+        	reset_flags();
+    	}
     }
 }
 
@@ -56,12 +72,17 @@ bool temperature_sensor_init(void)
     bool task_ok = false;
     bool mutex_ok = false;
 
-    ts_handler.temperature = NAN;
+    ts_handler.temperature_handler.temperature = NAN;
+    ts_handler.alarm_handler.alarm = false;
 
-    ts_handler.temperature_mutex = osMutexNew(NULL);
-    if (ts_handler.temperature_mutex != NULL)
+    ts_handler.temperature_handler.temperature_mutex = osMutexNew(NULL);
+    if (ts_handler.temperature_handler.temperature_mutex != NULL)
+    {
+    	ts_handler.alarm_handler.alarm_mutex = osMutexNew(NULL);
+    	if(ts_handler.alarm_handler.alarm_mutex != NULL)
     {
         mutex_ok = true;
+    	}
     }
 
     uint16_t config = (TMP117_MODE_CONTINUOUS << 10);
@@ -84,11 +105,11 @@ float temperature_sensor_get_temperature(void)
 {
     float temperature = NAN;
 
-    if (osMutexAcquire(ts_handler.temperature_mutex, osWaitForever) == osOK)
+    if (osMutexAcquire(ts_handler.temperature_handler.temperature_mutex, osWaitForever) == osOK)
     {
-        temperature = ts_handler.temperature;
+        temperature = ts_handler.temperature_handler.temperature;
 
-        if(osOK != osMutexRelease(ts_handler.temperature_mutex))
+        if(osOK != osMutexRelease(ts_handler.temperature_handler.temperature_mutex))
         {
         	handle_error();
         }
@@ -113,9 +134,8 @@ HAL_StatusTypeDef temperature_sensor_set_alarm(float high_temperature, float low
         return HAL_ERROR;
     }
 
-    // Ustaw tryb Therm Mode (T/nA bit = 1) i tryb ciągłej konwersji (MOD[1:0] = 00)
-    config |= (1 << ALERT_MODE_BIT_POSITION);  // Ustawienie bitu T/nA
-    config &= ~(3 << MOD_BITS_POSITION);       // Wyczyszczenie bitów MOD[1:0]
+    config &= ~(1 << ALERT_MODE_BIT_POSITION);
+    config &= ~(3 << MOD_BITS_POSITION);
 
     if (send_command(TMP117_CONFIGURATION_REGISTER, config) != HAL_OK)
     {
@@ -135,25 +155,15 @@ HAL_StatusTypeDef temperature_sensor_set_alarm(float high_temperature, float low
     return HAL_OK;
 }
 
-static HAL_StatusTypeDef update_temperature(void)
+bool temperature_sensor_is_alarm_triggered(void)
 {
-    HAL_StatusTypeDef status;
-    uint16_t raw_temp;
-    float calculated_temp;
+	bool result = true;
 
-    status = read_register(TMP117_TEMPERATURE_RESULT_REGISTER, &raw_temp);
-    if (status != HAL_OK)
+    if (osMutexAcquire(ts_handler.alarm_handler.alarm_mutex, osWaitForever) == osOK)
     {
-        return HAL_ERROR;
-    }
+        result = ts_handler.alarm_handler.alarm;
 
-    calculated_temp = (float)((int16_t)raw_temp) * 0.0078125f;
-
-    if (osMutexAcquire(ts_handler.temperature_mutex, osWaitForever) == osOK)
-    {
-        ts_handler.temperature = calculated_temp;
-
-        if(osOK != osMutexRelease(ts_handler.temperature_mutex))
+        if(osOK != osMutexRelease(ts_handler.alarm_handler.alarm_mutex))
         {
         	handle_error();
         }
@@ -163,16 +173,62 @@ static HAL_StatusTypeDef update_temperature(void)
     	handle_error();
     }
 
-    return HAL_OK;
+	return result;
+}
+
+void temperature_sensor_clear_alarm(void)
+{
+    if (osMutexAcquire(ts_handler.alarm_handler.alarm_mutex, osWaitForever) == osOK)
+    {
+    	ts_handler.alarm_handler.alarm = false;
+
+        if(osOK != osMutexRelease(ts_handler.alarm_handler.alarm_mutex))
+        {
+        	handle_error();
+        }
+    }
+    else
+    {
+    	handle_error();
+    }
+}
+
+
+static HAL_StatusTypeDef update_temperature(void)
+{
+    HAL_StatusTypeDef status;
+    uint16_t raw_temp;
+    float calculated_temp;
+
+    status = read_register(TMP117_TEMPERATURE_RESULT_REGISTER, &raw_temp);
+
+    if (status == HAL_OK)
+    {
+    calculated_temp = (float)((int16_t)raw_temp) * 0.0078125f;
+
+        if (osMutexAcquire(ts_handler.temperature_handler.temperature_mutex, osWaitForever) == osOK)
+    {
+            ts_handler.temperature_handler.temperature = calculated_temp;
+
+            if(osOK != osMutexRelease(ts_handler.temperature_handler.temperature_mutex))
+        {
+        	handle_error();
+        }
+    }
+    else
+    {
+    	handle_error();
+        }
+    }
+
+    return status;
 }
 
 static void temperature_task(void *argument)
 {
     (void)argument;
 
-    temperature_sensor_set_alarm(28, 10);
-
-    while (1)
+    for(;;)
     {
         update_temperature();
         osDelay(100);
@@ -181,26 +237,31 @@ static void temperature_task(void *argument)
 
 static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value)
 {
+	HAL_StatusTypeDef status = HAL_ERROR;
     uint8_t data[2];
+
     data[0] = (value >> 8) & 0xFF;
     data[1] = value & 0xFF;
 
-    HAL_StatusTypeDef status = HAL_I2C_Mem_Write(&I2C_HANDLE, TMP117_I2C_ADDRESS, reg, I2C_MEMADD_SIZE_8BIT, data, 2, HAL_MAX_DELAY);
+    status = HAL_I2C_Mem_Write(&I2C_HANDLE, TMP117_I2C_ADDRESS, reg, I2C_MEMADD_SIZE_8BIT, data, 2, HAL_MAX_DELAY);
+
     return status;
 }
 
 static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value)
 {
+	HAL_StatusTypeDef status = HAL_ERROR;
     uint8_t data[2];
 
-    HAL_StatusTypeDef status = HAL_I2C_Mem_Read(&I2C_HANDLE, TMP117_I2C_ADDRESS, reg, I2C_MEMADD_SIZE_8BIT, data, 2, HAL_MAX_DELAY);
-    if (status != HAL_OK)
+    status = HAL_I2C_Mem_Read(&I2C_HANDLE, TMP117_I2C_ADDRESS, reg, I2C_MEMADD_SIZE_8BIT, data, 2, HAL_MAX_DELAY);
+
+    if (status == HAL_OK)
     {
-        return HAL_ERROR;
+    *value = (data[0] << 8) | data[1];
     }
 
-    *value = (data[0] << 8) | data[1];
-    return HAL_OK;
+    return status;
+}
 }
 
 static void handle_error(void)
