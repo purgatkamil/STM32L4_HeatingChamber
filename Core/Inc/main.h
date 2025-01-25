@@ -64,6 +64,8 @@ void Error_Handler(void);
 #define LCD_SCK_GPIO_Port GPIOA
 #define LCD_MOSI_Pin GPIO_PIN_7
 #define LCD_MOSI_GPIO_Port GPIOA
+#define HEATER_ON_Pin GPIO_PIN_4
+#define HEATER_ON_GPIO_Port GPIOC
 #define LCD_CS_Pin GPIO_PIN_10
 #define LCD_CS_GPIO_Port GPIOA
 #define LCD_DC_Pin GPIO_PIN_3

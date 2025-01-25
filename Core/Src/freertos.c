@@ -28,6 +28,11 @@
 
 #include "i2c.h"
 #include "temperature_sensor.h"
+#include "lcd.h"
+#include "font.h"
+
+#include <string.h>
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -143,10 +148,23 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
 	temperature_sensor_init();
+
+	  char min_pulse_tab[22];
+	  float temp = 0.0;
+
+	  lcd_init();
+	  osDelay(100);
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  temp = temperature_sensor_get_temperature();
+	  sprintf(min_pulse_tab, "temperature: %f", temp);
+	  fill_with(BLACK);
+	  LCD_DisplayString(5, 5, min_pulse_tab, WHITE, LCD_FONT8);
+	  lcd_copy();
+
+      osDelay(500);
   }
   /* USER CODE END StartDefaultTask */
 }
