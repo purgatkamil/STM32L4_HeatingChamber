@@ -49,6 +49,7 @@ static ts_handler_t ts_handler;
 
 static HAL_StatusTypeDef send_command(uint8_t reg, uint16_t value);
 static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value);
+static HAL_StatusTypeDef reset_flags(void);
 static HAL_StatusTypeDef update_temperature(void);
 static void handle_error(void);
 static void temperature_task(void *argument);
@@ -193,6 +194,15 @@ void temperature_sensor_clear_alarm(void)
     }
 }
 
+static HAL_StatusTypeDef reset_flags(void)
+{
+	HAL_StatusTypeDef status = HAL_ERROR;
+    uint16_t config = 0U;
+
+    status = read_register(TMP117_CONFIGURATION_REGISTER, &config);
+
+    return status;
+}
 
 static HAL_StatusTypeDef update_temperature(void)
 {
@@ -261,6 +271,22 @@ static HAL_StatusTypeDef read_register(uint8_t reg, uint16_t *value)
     }
 
     return status;
+}
+
+static void temeprature_sensor_trigger_alarm(void)
+{
+    if (osMutexAcquire(ts_handler.alarm_handler.alarm_mutex, osWaitForever) == osOK)
+    {
+    	ts_handler.alarm_handler.alarm = true;
+
+        if(osOK != osMutexRelease(ts_handler.alarm_handler.alarm_mutex))
+        {
+        	handle_error();
+        }
+    }
+    else
+    {
+    	handle_error();
 }
 }
 
