@@ -28,12 +28,8 @@
 
 #include "i2c.h"
 #include "temperature_sensor.h"
-#include "lcd.h"
-#include "font.h"
+#include "display.h"
 #include "heater.h"
-
-#include <string.h>
-#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -149,21 +145,11 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
 	temperature_sensor_init();
-
-	  char min_pulse_tab[22];
-	  float temp = 0.0;
-
-	  lcd_init();
-	  osDelay(100);
+	display_init();
 
   /* Infinite loop */
   for(;;)
   {
-	  temp = temperature_sensor_get_temperature();
-	  sprintf(min_pulse_tab, "%0.2f C", temp);
-	  fill_with(BLACK);
-	  LCD_DisplayString(5, 5, min_pulse_tab, WHITE, LCD_FONT24);
-	  lcd_copy();
 	  if(temperature_sensor_is_alarm_triggered())
 	  {
 		  heater_turn_off();
