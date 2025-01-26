@@ -146,6 +146,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN StartDefaultTask */
 	temperature_sensor_init();
 	display_init();
+	heater_init();
 
   /* Infinite loop */
   for(;;)
