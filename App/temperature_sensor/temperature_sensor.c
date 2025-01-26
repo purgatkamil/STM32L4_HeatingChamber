@@ -93,7 +93,7 @@ bool temperature_sensor_init(void)
     {
         .name = "TemperatureTask",
         .priority = osPriorityNormal,
-        .stack_size = 128 * 4
+        .stack_size = 254 * 4
     };
 
     ts_handler.task_handle = osThreadNew(temperature_task, NULL, &task_attributes);
