@@ -90,6 +90,8 @@ static const uint16_t init_table[] =
   CMD(0xf6), 0x00,
   CMD(ST7735S_COLMOD), 0x05,
   CMD(ST7735S_MADCTL), 0xa0,
+
+  CMD(ST7735S_MADCTL), 0x60, //rotacja o 180 stopni  //0xa0,
 };
 
 void lcd_init(void)

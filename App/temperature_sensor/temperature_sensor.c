@@ -61,7 +61,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
     	if(ts_handler.alarm_handler.alarm == false)
     	{
-    		temeprature_sensor_trigger_alarm();
+    		//temeprature_sensor_trigger_alarm();
         	reset_flags();
     	}
     }

@@ -152,15 +152,24 @@ void StartDefaultTask(void *argument)
   {
 	  if(temperature_sensor_is_alarm_triggered())
 	  {
-		  heater_turn_off();
+		 // heater_turn_off();
 	  }
 
-	  if(40 > temperature_sensor_get_temperature())
+	  if(30 > temperature_sensor_get_temperature())
 	  {
-		  temperature_sensor_clear_alarm();
-		  temperature_sensor_set_alarm(30, 10);
+		  //temperature_sensor_clear_alarm();
+		  //temperature_sensor_set_alarm(30, 10);
 		  heater_turn_on();
+		  osDelay(37);
+		  heater_turn_off();
+		  osDelay(5000);
 	  }
+	 /* if(32 < temperature_sensor_get_temperature())
+	  {
+		  //temperature_sensor_clear_alarm();
+		  //temperature_sensor_set_alarm(30, 10);
+		  heater_turn_off();
+	  }*/
 
 
       osDelay(100);
