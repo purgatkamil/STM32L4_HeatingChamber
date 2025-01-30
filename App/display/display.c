@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define LCD_TASK_STACK_SIZE (254 * 4)
+#define LCD_TASK_STACK_SIZE (254 * 8)
 #define LCD_TASK_PRIORITY   osPriorityNormal
 
 typedef struct {
