@@ -19,7 +19,7 @@
 // Parametry PID dla małych różnic
 #define KP_LOW 15.0f
 #define KI_LOW 0.4f
-#define KD_LOW 0.6f
+#define KD_LOW 0.4f
 
 #define DEFAULT_SETPOINT 40.0f
 #define CYCLE_TIME_MS 1000      // Całkowity okres sterowania (1 sekund)
