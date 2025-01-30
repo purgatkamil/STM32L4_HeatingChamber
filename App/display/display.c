@@ -75,8 +75,9 @@ static void display_task(void *argument)
     for (;;)
     {
     	fill_with(BLACK);
+    	osDelay(50);
         display_temperature();
         lcd_copy();
-        osDelay(100); // Update every 1 second
+        osDelay(200); // Update every 1 second
     }
 }
