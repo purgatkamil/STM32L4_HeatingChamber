@@ -328,6 +328,6 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 
 static void handle_error(void)
 {
-	__asm volatile("BKPT #0");
+
 }
 

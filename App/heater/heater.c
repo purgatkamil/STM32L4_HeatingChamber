@@ -105,7 +105,7 @@ bool heater_init(void)
         const osThreadAttr_t task_attributes =
         {
             .name = "PIDTask",
-            .priority = osPriorityNormal,
+            .priority = osPriorityAboveNormal,
             .stack_size = 256 * 4
         };
 

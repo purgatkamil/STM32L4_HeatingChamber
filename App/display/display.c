@@ -102,7 +102,7 @@ static void display_task(void *argument)
         display_temperature();
         display_time();
         lcd_copy();
-        osDelay(200);
+        osDelay(500);
     }
 }
 
