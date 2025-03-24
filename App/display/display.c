@@ -74,16 +74,19 @@ static void display_task(void *argument)
 
     for (;;)
     {
-        display_temperature();
-
-        if (lcd_get_dirty() && !lcd_is_busy())
+        if (osMutexAcquire(lcd_get_mutex(), osWaitForever) == osOK)
         {
-            if (osMutexAcquire(lcd_get_mutex(), osWaitForever) == osOK)
+            lcd_fill(BLACK); // Czyść ekran
+            display_temperature(); // Rysuj nową zawartość
+            lcd_mark_dirty(); // Oznacz bufor jako zmodyfikowany
+
+            if (lcd_get_dirty() && !lcd_is_busy())
             {
-                lcd_copy();
+                lcd_copy(); // Wyślij zawartość
                 lcd_clear_dirty();
-                osMutexRelease(lcd_get_mutex());
             }
+
+            osMutexRelease(lcd_get_mutex());
         }
 
         osDelay(200);

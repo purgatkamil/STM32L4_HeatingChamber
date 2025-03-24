@@ -51,7 +51,6 @@ static const uint16_t init_table[] = {
 };
 
 static osMutexId_t lcd_mutex;
-static osThreadId_t lcd_task_handle;
 static bool lcd_dirty = false;
 
 static void lcd_send_command(uint8_t cmd)
@@ -118,7 +117,7 @@ bool lcd_init_freertos(void)
     lcd_mutex = osMutexNew(NULL);
     if (!lcd_mutex) return false;
 
-    return (lcd_task_handle != NULL);
+    return true;
 }
 
 void lcd_fill(uint16_t color)

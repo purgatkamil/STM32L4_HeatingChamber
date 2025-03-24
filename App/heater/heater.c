@@ -21,7 +21,7 @@
 #define KI_LOW 0.4f
 #define KD_LOW 0.4f
 
-#define DEFAULT_SETPOINT 40.0f
+#define DEFAULT_SETPOINT 50.0f//40.0f
 #define CYCLE_TIME_MS 1000      // Całkowity okres sterowania (1 sekund)
 #define MIN_HEATER_TIME_MS 20   // Minimalny czas włączenia grzałki
 #define TEMPERATURE_TOLERANCE 0.0f // Histereza: ±0.5°C wokół setpointu
