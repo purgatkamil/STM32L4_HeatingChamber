@@ -5,17 +5,9 @@
 
 #include "temperature_sensor.h"
 
-#define KP_HIGH 20.0f
-#define KI_HIGH 0.5f
-#define KD_HIGH 0.8f
-
-#define KP_MEDIUM 15.0f
-#define KI_MEDIUM 0.25f
-#define KD_MEDIUM 0.5f
-
-#define KP_LOW 15.0f
-#define KI_LOW 0.4f
-#define KD_LOW 0.4f
+#define KP 15.0f
+#define KI 0.4f
+#define KD 0.4f
 
 #define DEFAULT_SETPOINT 50.0f
 #define CYCLE_TIME_MS 1000
@@ -25,17 +17,9 @@
 
 typedef struct
 {
-    float kp_high;
-    float ki_high;
-    float kd_high;
-
-    float kp_medium;
-    float ki_medium;
-    float kd_medium;
-
-    float kp_low;
-    float ki_low;
-    float kd_low;
+    float kp;
+    float ki;
+    float kd;
 
     float setpoint;
     float integral;
@@ -46,14 +30,12 @@ typedef struct
 
 typedef enum
 {
-	HEATER_MODE_OFF,
-	HEATER_MODE_LOW,
-	HEATER_MODE_MEDIUM,
-	HEATER_MODE_HIGH,
-	HEATER_MODE_KEEP,
+    HEATER_MODE_OFF,
+    HEATER_MODE_ON,
+    HEATER_MODE_KEEP,
 
-	HEATER_MODE_NUMBER,
-}heater_mode_t;
+    HEATER_MODE_NUMBER,
+} heater_mode_t;
 
 typedef struct
 {
@@ -64,28 +46,20 @@ typedef struct
     osMutexId_t mutex;
 } pid_handler_t;
 
-static pid_handler_t pid_handler =
+pid_handler_t pid_handler =
 {
-    .pid_params.kp_high = KP_HIGH,
-    .pid_params.ki_high = KI_HIGH,
-    .pid_params.kd_high = KD_HIGH,
-
-    .pid_params.kp_medium = KP_MEDIUM,
-    .pid_params.ki_medium = KI_MEDIUM,
-    .pid_params.kd_medium = KD_MEDIUM,
-
-    .pid_params.kp_low = KP_LOW,
-    .pid_params.ki_low = KI_LOW,
-    .pid_params.kd_low = KD_LOW,
+    .pid_params.kp = KP,
+    .pid_params.ki = KI,
+    .pid_params.kd = KD,
 
     .pid_params.setpoint = DEFAULT_SETPOINT,
     .pid_params.integral = 0.0f,
     .pid_params.previous_error = 0.0f,
+    .pid_params.current_power = 0.0f,
+    .pid_params.previous_temperature = 0.0f,
 
-	.pid_params.current_power = 0.0f,
-	.pid_params.previous_temperature = 0.0f,
     .heater_state = false,
-	.mode = HEATER_MODE_OFF,
+    .mode = HEATER_MODE_OFF,
 };
 
 static void pid_task(void *argument);
@@ -125,7 +99,6 @@ static void pid_task(void *argument)
     for (;;)
     {
         float current_temperature = temperature_sensor_get_temperature();
-        float error = pid_handler.pid_params.setpoint - current_temperature;
 
         if (osMutexAcquire(pid_handler.mutex, osWaitForever) == osOK)
         {
@@ -142,48 +115,27 @@ static void pid_task(void *argument)
 static float calculate_pid_output(float current_temperature)
 {
     float error = pid_handler.pid_params.setpoint - current_temperature;
-    float kp, ki, kd;
-    if (fabsf(error) > 20.0f)
-    {
-        kp = pid_handler.pid_params.kp_high;
-        ki = pid_handler.pid_params.ki_high;
-        kd = pid_handler.pid_params.kd_high;
-        pid_handler.mode = HEATER_MODE_HIGH;
-    }
-    else if (fabsf(error) > 10.0f)
-    {
-        kp = pid_handler.pid_params.kp_medium;
-        ki = pid_handler.pid_params.ki_medium;
-        kd = pid_handler.pid_params.kd_medium;
-        pid_handler.mode = HEATER_MODE_MEDIUM;
-    }
-    else
-    {
-        kp = pid_handler.pid_params.kp_low;
-        ki = pid_handler.pid_params.ki_low;
-        kd = pid_handler.pid_params.kd_low;
-        pid_handler.mode = HEATER_MODE_LOW;
-    }
 
     pid_handler.pid_params.integral += error * (CYCLE_TIME_MS / 1000.0f);
-    if (pid_handler.pid_params.integral > 100.0f / ki)
+    if (pid_handler.pid_params.integral > 100.0f / pid_handler.pid_params.ki)
     {
-        pid_handler.pid_params.integral = 100.0f / ki;
+        pid_handler.pid_params.integral = 100.0f / pid_handler.pid_params.ki;
     }
-    else if (pid_handler.pid_params.integral < -50.0f / ki)
+    else if (pid_handler.pid_params.integral < -50.0f / pid_handler.pid_params.ki)
     {
-        pid_handler.pid_params.integral = -50.0f / ki;
+        pid_handler.pid_params.integral = -50.0f / pid_handler.pid_params.ki;
     }
 
     float derivative = (error - pid_handler.pid_params.previous_error) / (CYCLE_TIME_MS / 1000.0f);
 
-    float output = kp * error + ki * pid_handler.pid_params.integral + kd * derivative;
+    float output = pid_handler.pid_params.kp * error +
+                   pid_handler.pid_params.ki * pid_handler.pid_params.integral +
+                   pid_handler.pid_params.kd * derivative;
 
     if (output > 100.0f) output = 100.0f;
     if (output < 0.0f) output = 0.0f;
 
     pid_handler.pid_params.current_power = output;
-
     pid_handler.pid_params.previous_error = error;
     return output;
 }
