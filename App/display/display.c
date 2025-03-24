@@ -13,8 +13,6 @@
 
 #include "rtc_module.h"
 
-
-
 #define LCD_TASK_STACK_SIZE (254 * 8)
 #define LCD_TASK_PRIORITY   osPriorityNormal
 
@@ -37,9 +35,10 @@ static void display_task(void *argument);
 bool display_init(void)
 {
     bool task_ok = false;
+    bool lcd_ok = false;
 
-    lcd_init();
-    fill_with(BLACK);
+    lcd_ok = lcd_init();
+    lcd_fill(BLACK);
 
     strncpy(display_handler.temperature_field.label, "Temperature:", sizeof(display_handler.temperature_field.label) - 1);
     display_handler.temperature_field.color = WHITE;
@@ -55,7 +54,7 @@ bool display_init(void)
     display_handler.task_handle = osThreadNew(display_task, NULL, &task_attributes);
     task_ok = (display_handler.task_handle != NULL);
 
-    return task_ok;
+    return task_ok && lcd_ok;
 }
 
 static void display_temperature()
@@ -63,28 +62,13 @@ static void display_temperature()
 	char buffer[64];
 	sprintf(buffer, "%s %0.2f",display_handler.temperature_field.label, temperature_sensor_get_temperature());
 
-
-    LCD_DisplayString(
+    lcd_display_string(
         display_handler.temperature_field.x,
 		display_handler.temperature_field.y,
         buffer,
 		display_handler.temperature_field.color,
         LCD_FONT12
     );
-
-    char timer[18];
-    RTC_TimeTypeDef time = rtc_get_time_struct();
-
-    sprintf(timer, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
-
-    LCD_DisplayString(
-        10,
-		30,
-        timer,
-		WHITE,
-        LCD_FONT12
-    );
-
 }
 
 static void display_task(void *argument)
@@ -92,11 +76,11 @@ static void display_task(void *argument)
     (void)argument;
     for (;;)
     {
-
-    	fill_with(BLACK);
-    	osDelay(50);
+    	lcd_fill(BLACK);
+    	osDelay(200);
         display_temperature();
         lcd_copy();
-        osDelay(200); // Update every 1 second
+        osDelay(1000);
     }
 }
+
