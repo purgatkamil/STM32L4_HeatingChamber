@@ -130,10 +130,10 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	  if(temperature_sensor_is_alarm_triggered())
+	 /* if(temperature_sensor_is_alarm_triggered())
 	  {
 		 // heater_turn_off();
-	  }
+	  }*/
 
       osDelay(100);
   }
