@@ -33,8 +33,8 @@ bool display_init(void)
 {
     bool task_ok = false;
 
-    lcd_init();
-    fill_with(BLACK);
+    lcd_init_freertos();
+    lcd_fill(BLACK);
 
     strncpy(display_handler.temperature_field.label, "Temperature:", sizeof(display_handler.temperature_field.label) - 1);
     display_handler.temperature_field.color = WHITE;
@@ -74,10 +74,19 @@ static void display_task(void *argument)
 
     for (;;)
     {
-    	fill_with(BLACK);
-    	osDelay(50);
         display_temperature();
-        lcd_copy();
-        osDelay(200); // Update every 1 second
+
+        if (lcd_get_dirty() && !lcd_is_busy())
+        {
+            if (osMutexAcquire(lcd_get_mutex(), osWaitForever) == osOK)
+            {
+                lcd_copy();
+                lcd_clear_dirty();
+                osMutexRelease(lcd_get_mutex());
+            }
+        }
+
+        osDelay(200);
     }
 }
+
