@@ -30,6 +30,7 @@
 #include "temperature_sensor.h"
 #include "display.h"
 #include "heater.h"
+#include "rtc_module.h"
 
 /* USER CODE END Includes */
 
@@ -41,33 +42,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define TMP117_ADDRESS         0x48 << 1  // Adres 7-bitowy przesunięty w lewo o 1 bit
-#define TMP117_TEMP_REG        0x00       // Rejestr temperatury
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
-float TMP117_ReadTemperature(void) {
-    uint8_t temp_data[2];
-    int16_t raw_temp;
-    float temperature;
-
-    // Odczyt 2 bajtów z rejestru temperatury
-    if (HAL_I2C_Mem_Read(&hi2c1, TMP117_ADDRESS, TMP117_TEMP_REG, I2C_MEMADD_SIZE_8BIT, temp_data, 2, HAL_MAX_DELAY) == HAL_OK) {
-        // �?ączenie odczytanych bajtów w wartość 16-bitową
-        raw_temp = (int16_t)((temp_data[0] << 8) | temp_data[1]);
-
-        // Przeliczenie na temperaturę w stopniach Celsjusza
-        temperature = raw_temp * 0.0078125;
-    } else {
-        // W przypadku błędu zwróć wartość specjalną
-        temperature = -273.15; // Wartość wskazująca na błąd
-    }
-
-    return temperature;
-}
 
 /* USER CODE END PM */
 
@@ -145,6 +123,7 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
 	temperature_sensor_init();
+	rtc_init();
 	display_init();
 	heater_init();
 
@@ -156,23 +135,6 @@ void StartDefaultTask(void *argument)
 		 // heater_turn_off();
 	  }
 
-	  if(30 > temperature_sensor_get_temperature())
-	  {
-		  //temperature_sensor_clear_alarm();
-		  //temperature_sensor_set_alarm(30, 10);
-		  heater_turn_on();
-		  osDelay(37);
-		  heater_turn_off();
-		  osDelay(5000);
-	  }
-	 /* if(32 < temperature_sensor_get_temperature())
-	  {
-		  //temperature_sensor_clear_alarm();
-		  //temperature_sensor_set_alarm(30, 10);
-		  heater_turn_off();
-	  }*/
-
-
       osDelay(100);
   }
   /* USER CODE END StartDefaultTask */
@@ -181,7 +143,4 @@ void StartDefaultTask(void *argument)
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
-
-
 /* USER CODE END Application */
-

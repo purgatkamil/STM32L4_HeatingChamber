@@ -9,6 +9,7 @@
 #include "main.h"
 #include <string.h>
 #include <stdio.h>
+#include <rtc.h>
 
 #include "rtc_module.h"
 
@@ -71,11 +72,14 @@ static void display_temperature()
         LCD_FONT12
     );
 
-    char timer[8];
-    rtc_get_time(timer);
+    char timer[18];
+    RTC_TimeTypeDef time = rtc_get_time_struct();
+
+    sprintf(timer, "Time: %02d:%02d:%02d", time.Hours, time.Minutes, time.Seconds);
+
     LCD_DisplayString(
-        50,
-		50,
+        10,
+		30,
         timer,
 		WHITE,
         LCD_FONT12
@@ -86,7 +90,6 @@ static void display_temperature()
 static void display_task(void *argument)
 {
     (void)argument;
-    rtc_reset_time();
     for (;;)
     {
 
