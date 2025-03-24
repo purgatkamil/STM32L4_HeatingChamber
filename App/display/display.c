@@ -10,6 +10,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "rtc_module.h"
+
+
+
 #define LCD_TASK_STACK_SIZE (254 * 8)
 #define LCD_TASK_PRIORITY   osPriorityNormal
 
@@ -66,14 +70,26 @@ static void display_temperature()
 		display_handler.temperature_field.color,
         LCD_FONT12
     );
+
+    char timer[8];
+    rtc_get_time(timer);
+    LCD_DisplayString(
+        50,
+		50,
+        timer,
+		WHITE,
+        LCD_FONT12
+    );
+
 }
 
 static void display_task(void *argument)
 {
     (void)argument;
-
+    rtc_reset_time();
     for (;;)
     {
+
     	fill_with(BLACK);
     	osDelay(50);
         display_temperature();
