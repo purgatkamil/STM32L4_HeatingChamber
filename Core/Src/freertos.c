@@ -31,6 +31,7 @@
 #include "display.h"
 #include "heater.h"
 #include "rtc_module.h"
+#include "charts.h"
 
 /* USER CODE END Includes */
 
@@ -126,6 +127,7 @@ void StartDefaultTask(void *argument)
 	rtc_init();
 	display_init();
 	heater_init();
+	charts_init();
 
   /* Infinite loop */
   for(;;)
@@ -144,3 +146,4 @@ void StartDefaultTask(void *argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
+
