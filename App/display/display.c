@@ -12,8 +12,9 @@
 #include <rtc.h>
 
 #include "rtc_module.h"
+#include "charts.h"
 
-#define LCD_TASK_STACK_SIZE (254 * 8)
+#define LCD_TASK_STACK_SIZE (254 * 24)
 #define LCD_TASK_PRIORITY   osPriorityNormal
 
 typedef struct {
@@ -99,8 +100,13 @@ static void display_task(void *argument)
     {
     	lcd_fill(BLACK);
     	osDelay(50);
-        display_temperature();
-        display_time();
+       // display_temperature();
+        //display_time();
+        float temp = temperature_sensor_get_temperature();
+        charts_shift_buffers();
+        charts_push_value(0, 50.0f);
+        charts_push_value(1, temp);
+        charts_draw();
         lcd_copy();
         osDelay(500);
     }
